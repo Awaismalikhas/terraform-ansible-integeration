@@ -41,7 +41,6 @@ jobs:
 
     outputs:
       public_ip: ${{ steps.ip.outputs.PUBLIC_IP }}
-
   ansible:
     needs: runterraform  # Make this job depend on the `terraform` job
     runs-on: ubuntu-latest
@@ -75,3 +74,6 @@ jobs:
         run: ansible-playbook -i inventory.ini playbook.yml
         env:
           ANSIBLE_HOST_KEY_CHECKING: False
+
+ 
+     
