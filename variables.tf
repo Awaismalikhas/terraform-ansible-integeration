@@ -1,7 +1,7 @@
 
 variable "ami_id" {
   type    = string
-  default = "ami-06ca3ca175f37dd66"
+  default = "ami-0af9569868786b23a"
 }
 
 variable "ami_key_pair" {
