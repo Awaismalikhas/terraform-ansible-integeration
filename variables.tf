@@ -6,7 +6,7 @@ variable "ami_id" {
 
 variable "ami_key_pair" {
   type    = string
-  default = "terraform-ec2"
+  default = "rds.pem"
 }
 
 

@@ -1,32 +1,32 @@
 # Add provider
 provider "aws" {
-  region = "us-east-1"
+  region = "ap-south-1"
 }
 
 # VPC
-resource "aws_vpc" "cloudysky-vpc" {
+resource "aws_vpc" "my-vpc" {
   cidr_block           = "10.0.0.0/16"
   enable_dns_hostnames = true
   enable_dns_support   = true
   tags = {
-    Name = "cloudysky-vpc"
+    Name = "my-vpc"
   }
 }
 
 # Subnet
 # Refer http://blog.itsjustcode.net/blog/2017/11/18/terraform-cidrsubnet-deconstructed/
-resource "aws_subnet" "cloudysky-subnet" {
-  vpc_id                  = aws_vpc.cloudysky-vpc.id
-  cidr_block              = cidrsubnet(aws_vpc.cloudysky-vpc.cidr_block, 3, 1)
-  availability_zone       = "us-east-1a"
+resource "aws_subnet" "my-subnet" {
+  vpc_id                  = aws_vpc.my-vpc.id
+  cidr_block              = "10.0.1.0/24"
+  availability_zone       = "ap-south-1a"
   map_public_ip_on_launch = true
 }
 
 # Security Group
 
-resource "aws_security_group" "cloudsky-ingress-all" {
-  name   = "cloudsky-ingress-allow-all"
-  vpc_id = aws_vpc.cloudysky-vpc.id
+resource "aws_security_group" "my-security" {
+  name   = "my-security"
+  vpc_id = aws_vpc.my-vpc.id
   ingress {
     from_port   = 22
     to_port     = 22
@@ -59,54 +59,54 @@ resource "aws_security_group" "cloudsky-ingress-all" {
 }
 
 # EC2 Instance for testing
-resource "aws_instance" "cloudysky-ec2" {
+resource "aws_instance" "my-ec2" {
   ami                    = var.ami_id
   instance_type          = "t2.micro"
   key_name               = var.ami_key_pair
-  subnet_id              = aws_subnet.cloudysky-subnet.id
-  vpc_security_group_ids = [aws_security_group.cloudsky-ingress-all.id]
+  subnet_id              = aws_subnet.my-subnet.id
+  vpc_security_group_ids = [aws_security_group.my-security.id]
   tags = {
-    Name = "cloudysky-ec2"
+    Name = "my-ec2"
   }
 }
 
 # To access the instance, we would need an elastic IP
-resource "aws_eip" "cloudysky-eip" {
-  instance = aws_instance.cloudysky-ec2.id
-  vpc      = true
+resource "aws_eip" "my-eip" {
+  instance = aws_instance.my-ec2.id
+
+  domain   = vpc
+
 }
 
 # Route traffic from internet to the vpc
-resource "aws_internet_gateway" "cloudysky-igw" {
-  vpc_id = aws_vpc.cloudysky-vpc.id
+resource "aws_internet_gateway" "my-igw" {
+  vpc_id = aws_vpc.my-vpc.id
   tags = {
-    Name = "cloudysky-igw"
+    Name = "my-igw"
   }
 }
 
 # Setting up route table
-resource "aws_route_table" "cloudysky-rt" {
-  vpc_id = aws_vpc.cloudysky-vpc.id
+resource "aws_route_table" "my-rt" {
+  vpc_id = aws_vpc.my-vpc.id
   route {
     cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.cloudysky-igw.id
+    gateway_id = aws_internet_gateway.my-igw.id
   }
 
   tags = {
-    Name = "cloudysky-rt"
+    Name = "my-rt"
   }
 }
 
 # Associate the route table with the subnet
-resource "aws_route_table_association" "cloudysky-rt-assoc" {
-  subnet_id      = aws_subnet.cloudysky-subnet.id
-  route_table_id = aws_route_table.cloudysky-rt.id
+resource "aws_route_table_association" "my-rt-assoc" {
+  subnet_id      = aws_subnet.my-subnet.id
+  route_table_id = aws_route_table.my-rt.id
 }
 
 # Add a SNS topic
-resource "aws_sns_topic" "cloudysky-sns-topic" {
-  name = "cloudysky-sns-topic"
-}
+
 
 
 

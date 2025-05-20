@@ -5,12 +5,4 @@ terraform {
       version = "5.8.0"
     }
   }
-
-  cloud {
-    organization = "cloudysky"
-
-    workspaces {
-      name = "terraform-sandeep-aws"
-    }
-  }
 }
