@@ -70,6 +70,9 @@ resource "aws_instance" "my-ec2" {
   key_name               = var.ami_key_pair
   subnet_id              = aws_subnet.my-subnet.id
   vpc_security_group_ids = [aws_security_group.my-security.id]
+  lifecycle {
+    ignore_changes = [associate_public_ip_address]
+  }
   depends_on             = [aws_eip.my_eip]
   tags = {
     Name = "my-ec2"
