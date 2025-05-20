@@ -73,7 +73,7 @@ resource "aws_instance" "my-ec2" {
   lifecycle {
     ignore_changes = [associate_public_ip_address]
   }
-  depends_on             = [aws_eip.my_eip]
+  depends_on             = [aws_eip.my-eip]
   tags = {
     Name = "my-ec2"
   }
