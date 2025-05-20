@@ -71,7 +71,9 @@ resource "aws_instance" "my-ec2" {
   subnet_id              = aws_subnet.my-subnet.id
   vpc_security_group_ids = [aws_security_group.my-security.id]
   
-  depends_on             = [aws_eip.my-eip]
+  lifecycle {
+    ignore_changes = [associate_public_ip_address]
+  }
   tags = {
     Name = "my-ec2"
   }
