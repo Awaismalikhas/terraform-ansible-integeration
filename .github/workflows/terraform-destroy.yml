@@ -5,7 +5,7 @@ on: workflow_dispatch
 jobs:
   destroy-infra:
     runs-on: ubuntu-latest
-    environment: production  # Recommended for destructive operations
+    environment: production
 
     steps:
       - name: Checkout code
@@ -16,25 +16,26 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ap-south-1  # Match your Terraform region
+          aws-region: ap-south-1
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
-        with:
-          terraform_wrapper: false
 
-      - name: Terraform Init
-        run: terraform init -upgrade
+      - name: Find State File
+        run: |
+          echo "Looking for state files..."
+          find . -name "*.tfstate"
+          find . -name ".terraform" -type d
 
-      - name: List Existing Resources (Debug)
-        run: terraform state list
+      - name: Terraform Init (with explicit backend)
+        run: terraform init -reconfigure
 
       - name: Terraform Destroy
         run: |
-          terraform plan -destroy -out=destroy.plan
-          terraform apply -auto-approve destroy.plan
+          terraform destroy -auto-approve \
+            -state=terraform.tfstate \
+            -state-out=terraform.tfstate \
+            -backup=terraform.tfstate.backup
 
-      - name: Verify Destruction
-        run: |
-          echo "Remaining resources:"
-          terraform state list || echo "No state found"
+      - name: Verify Resources Destroyed
+        run: aws ec2 describe-instances --filters "Name=tag:CreatedBy,Values=Terraform"
