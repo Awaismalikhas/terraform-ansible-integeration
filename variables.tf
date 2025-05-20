@@ -6,7 +6,7 @@ variable "ami_id" {
 
 variable "ami_key_pair" {
   type    = string
-  default = "rds.pem"
+  default = "rds"
 }
 
 
