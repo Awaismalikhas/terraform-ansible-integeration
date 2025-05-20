@@ -75,7 +75,11 @@ jobs:
           echo '${{ needs.runterraform.outputs.public_ip }}' >> inventory.ini
 
       - name: Run Ansible Playbook
-        run: ansible-playbook -i inventory.ini playbook.yml
+        run: |
+           ansible-playbook -i inventory.ini playbook.yml \
+            --private-key=/home/runner/.ssh/id_rsa \
+            -u ec2-user \
+            -e "ansible_ssh_private_key_file=/home/runner/.ssh/id_rsa" \
         env:
           ANSIBLE_HOST_KEY_CHECKING: False
 
