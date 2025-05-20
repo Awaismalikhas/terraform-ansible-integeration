@@ -74,7 +74,7 @@ resource "aws_instance" "my-ec2" {
 resource "aws_eip" "my-eip" {
   instance = aws_instance.my-ec2.id
 
-  domain   = vpc
+  domain   = "vpc"
 
 }
 
