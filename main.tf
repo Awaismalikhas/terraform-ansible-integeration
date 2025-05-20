@@ -56,12 +56,7 @@ resource "aws_security_group" "my-security" {
   }
 
 }
-resource "aws_eip" "my-eip" {
-  instance = aws_instance.my-ec2.id
 
-  domain   = "vpc"
-
-}
 
 # EC2 Instance for testing
 resource "aws_instance" "my-ec2" {
