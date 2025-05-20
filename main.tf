@@ -56,6 +56,12 @@ resource "aws_security_group" "my-security" {
   }
 
 }
+resource "aws_eip" "my-eip" {
+  instance = aws_instance.my-ec2.id
+
+  domain   = "vpc"
+
+}
 
 # EC2 Instance for testing
 resource "aws_instance" "my-ec2" {
@@ -64,18 +70,14 @@ resource "aws_instance" "my-ec2" {
   key_name               = var.ami_key_pair
   subnet_id              = aws_subnet.my-subnet.id
   vpc_security_group_ids = [aws_security_group.my-security.id]
+  depends_on             = [aws_eip.my_eip]
   tags = {
     Name = "my-ec2"
   }
 }
 
 # To access the instance, we would need an elastic IP
-resource "aws_eip" "my-eip" {
-  instance = aws_instance.my-ec2.id
 
-  domain   = "vpc"
-
-}
 
 # Route traffic from internet to the vpc
 resource "aws_internet_gateway" "my-igw" {
