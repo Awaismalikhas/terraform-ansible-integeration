@@ -3,26 +3,38 @@ name: Destroy EC2
 on: workflow_dispatch
 
 jobs:
-  runterraform:
+  destroy-infra:
     runs-on: ubuntu-latest
+    environment: production  # Recommended for destructive operations
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: List out directory
-        run: ls
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-south-1  # Match your Terraform region
 
-      - name: Set up Terraform
+      - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
         with:
-          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
           terraform_wrapper: false
 
-      - name: Terraform init
+      - name: Terraform Init
         run: terraform init -upgrade
 
-      - name: Terraform apply
-        id: terraform
-        run: terraform destroy -auto-approve
+      - name: List Existing Resources (Debug)
+        run: terraform state list
 
+      - name: Terraform Destroy
+        run: |
+          terraform plan -destroy -out=destroy.plan
+          terraform apply -auto-approve destroy.plan
+
+      - name: Verify Destruction
+        run: |
+          echo "Remaining resources:"
+          terraform state list || echo "No state found"
