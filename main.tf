@@ -1,6 +1,15 @@
 provider "aws" {
   region = "ap-south-1"
 }
+terraform {
+  backend "s3" {
+    bucket         = "forterraformansibleintegeration"
+    key            = "terraform.tfstate"
+    region         = "ap-south-1"
+     # optional but recommended
+    encrypt        = true
+  }
+}
 
 # VPC
 resource "aws_vpc" "my-vpc" {
