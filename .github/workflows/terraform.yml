@@ -1,45 +1,87 @@
-  ansible:
-    needs: runterraform
+name: Provision EC2
+
+on: workflow_dispatch
+
+jobs:
+  runterraform:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Purge all configs
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-south-1
+
+      - name: Verify AWS access
+        run: aws sts get-caller-identity
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_wrapper: false
+
+      - name: Terraform init
+        run: terraform init -upgrade
+
+      - name: Terraform apply
+        id: terraform
+        run: terraform apply -auto-approve
+
+      - name: Output Instance Public IP
+        id: ip
         run: |
-          rm -rf ~/.ansible/
-          rm -rf ~/.ssh/
-          mkdir -p ~/.ssh/
+          IP=$(terraform output -raw instance_public_ip)
+          echo "PUBLIC_IP=$IP" >> $GITHUB_OUTPUT
+          echo "The public IP is $IP"
+
+    outputs:
+      public_ip: ${{ steps.ip.outputs.PUBLIC_IP }}
+  ansible:
+    needs: runterraform  # Make this job depend on the `terraform` job
+    runs-on: ubuntu-latest
+    steps:
 
       - name: Set up SSH
         run: |
+          mkdir -p ~/.ssh/
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan ${{ needs.runterraform.outputs.public_ip }} >> ~/.ssh/known_hosts
-          eval $(ssh-agent)
-          ssh-add ~/.ssh/id_rsa
-
-      - name: Debug setup
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Use the IP
         run: |
-          ls -la ~/.ssh/
-          ssh-keygen -l -f ~/.ssh/id_rsa
+          echo "The public IP from the terraform job is ${{ needs.runterraform.outputs.public_ip }}"
 
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.10"
+          python-version: "3.10"  # Only added this specific version
+      - name: Clean Ansible Cache
+        run: |
+          rm -rf ~/.ansible/cp
+          ansible-config dump | grep -i ssh
 
       - name: Install Ansible
         run: python -m pip install --upgrade pip && pip install ansible
 
-      - name: Create Inventory
+      - name: Create Ansible Inventory
         run: |
           echo '[ec2_instance]' > inventory.ini
-          echo '${{ needs.runterraform.outputs.public_ip }} ansible_ssh_private_key_file=/home/runner/.ssh/id_rsa ansible_user=ec2-user' >> inventory.ini
+          echo '${{ needs.runterraform.outputs.public_ip }}' >> inventory.ini
 
       - name: Run Ansible Playbook
         run: |
-          ANSIBLE_SSH_ARGS="-vvv -o IdentitiesOnly=yes -o IdentityFile=/home/runner/.ssh/id_rsa" \
-          ansible-playbook -i inventory.ini playbook.yml \
+           ansible-playbook -i inventory.ini playbook.yml \
             --private-key=/home/runner/.ssh/id_rsa \
-            -vvvv
+            -u ec2-user \
+            -e "ansible_ssh_private_key_file=/home/runner/.ssh/id_rsa" \
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: False
+
+ 
+     
