@@ -1,6 +1,7 @@
-name: Destroy EC2
+name: Destroy Infrastructure
 
-on: workflow_dispatch
+on:
+  workflow_dispatch:
 
 jobs:
   destroy-infra:
@@ -20,22 +21,14 @@ jobs:
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 5.8.0  # Or your desired version
 
-      - name: Find State File
-        run: |
-          echo "Looking for state files..."
-          find . -name "*.tfstate"
-          find . -name ".terraform" -type d
-
-      - name: Terraform Init (with explicit backend)
+      - name: Terraform Init (with backend)
         run: terraform init -reconfigure
 
-      - name: Terraform Destroy
-        run: |
-          terraform destroy -auto-approve \
-            -state=terraform.tfstate \
-            -state-out=terraform.tfstate \
-            -backup=terraform.tfstate.backup
+      - name: Verify Terraform backend & State
+        run: terraform state list
 
-      - name: Verify Resources Destroyed
-        run: aws ec2 describe-instances --filters "Name=tag:CreatedBy,Values=Terraform"
+      - name: Terraform Destroy
+        run: terraform destroy -auto-approve
